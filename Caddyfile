@@ -1,0 +1,21 @@
+{$DOMAIN} {
+    root * /var/www/html
+    php_fastcgi wordpress:9000
+    file_server
+    encode gzip zstd
+
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+    }
+
+    @static {
+        file
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot *.mp4
+    }
+    header @static Cache-Control max-age=31536000
+
+    request_body {
+        max_size 64MB
+    }
+}

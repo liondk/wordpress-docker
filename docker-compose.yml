@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./db_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - ./redis_data:/data
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+      - redis
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+    volumes:
+      - ./wp_data:/var/www/html
+      - ./php-conf:/usr/local/etc/php/conf.d
+    networks:
+      - wpnet
+
+  caddy:
+    image: caddy:latest
+    restart: always
+    depends_on:
+      - wordpress
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+      - ./wp_data:/var/www/html
+    environment:
+      DOMAIN: ${DOMAIN}
+    networks:
+      - wpnet
+
+networks:
+  wpnet:
+    driver: bridge
