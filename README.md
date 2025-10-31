@@ -12,3 +12,10 @@ cd wordpress-docker
 cp .env.example .env
 # Edit .env to set domain, passwords, etc.
 docker compose up -d --build
+```
+-----
+## Install Docker & docker compose
+
+```bash
+chmod +x install_docker.sh
+./install_docker.sh
