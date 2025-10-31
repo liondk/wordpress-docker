@@ -1,7 +1,7 @@
 # 🐳 WordPress Docker Stack (Caddy + Redis + MariaDB)
 
 A production-ready WordPress stack running on Docker with Caddy (auto SSL), Redis, and MariaDB.
-
+Work well on: Debian 12
 ---
 
 ## 🚀 Quick Deploy
