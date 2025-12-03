@@ -39,6 +39,7 @@ services:
     volumes:
       - ./wp_data:/var/www/html
       - ./php-conf/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - ./php-conf/opcache-recommended.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini
     networks:
       - wpnet
 
