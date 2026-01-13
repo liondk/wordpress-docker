@@ -4,6 +4,11 @@ services:
   db:
     image: mariadb:10.11
     restart: always
+    command: 
+      - --transaction-isolation=READ-COMMITTED
+      - --binlog-format=ROW
+      - --innodb-file-per-table=1
+      - --skip-innodb-read-only-compressed
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -17,7 +22,7 @@ services:
   redis:
     image: redis:7
     restart: always
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
     volumes:
       - ./redis_data:/data
     networks:
@@ -36,6 +41,9 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_REDIS_HOST', 'redis');
+        define('DISABLE_WP_CRON', true);
     volumes:
       - ./wp_data:/var/www/html
       - ./php-conf/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
@@ -58,6 +66,15 @@ services:
       - ./wp_data:/var/www/html
     environment:
       DOMAIN: ${DOMAIN}
+    networks:
+      - wpnet
+  wp-cron:
+    image: wordpress:cli-alpine
+    depends_on:
+      - wordpress
+    volumes:
+      - ./wp_data:/var/www/html
+    entrypoint: "/bin/sh -c 'while true; do wp cron event run --due-now --allow-root --path=/var/www/html; sleep 300; done'"
     networks:
       - wpnet
 

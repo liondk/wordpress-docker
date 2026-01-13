@@ -1,19 +1,41 @@
+www.{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
+
 {$DOMAIN} {
     root * /var/www/html
-    php_fastcgi wordpress:9000
-    file_server
+    
     encode gzip zstd
+
 
     header {
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
+
+
+    @forbidden {
+        path /wp-config.php
+        path /readme.html
+        path /license.txt
+        path /.user.ini
+        path /wp-content/debug.log
+        path /wp-content/uploads/*.php
+        path /.*
+    }
+    respond @forbidden 403
 
     @static {
         file
-        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot *.mp4
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot *.mp4 *.webp
     }
     header @static Cache-Control max-age=31536000
+
+
+    php_fastcgi wordpress:9000
+
+    file_server
 
     request_body {
         max_size 64MB
