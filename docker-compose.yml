@@ -9,6 +9,9 @@ services:
       - --binlog-format=ROW
       - --innodb-file-per-table=1
       - --skip-innodb-read-only-compressed
+      - --innodb-temp-data-file-path=ibtmp1:12M:autoextend:max:2G
+      - --log-bin=mysql-bin
+      - --expire-logs-days=7
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -16,6 +19,12 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./db_data:/var/lib/mysql
+      - ./db_tmp:/tmp
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - wpnet
 
