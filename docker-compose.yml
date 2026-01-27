@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: mariadb:10.11
@@ -8,6 +6,9 @@ services:
       - --transaction-isolation=READ-COMMITTED
       - --binlog-format=ROW
       - --innodb-file-per-table=1
+      - --innodb-buffer-pool-size=512M # Tối ưu cho 2GB RAM
+      - --innodb-log-file-size=128M
+      - --max-connections=50
       - --skip-innodb-read-only-compressed
       - --innodb-temp-data-file-path=ibtmp1:12M:autoextend:max:2G
       - --log-bin=mysql-bin
@@ -57,6 +58,7 @@ services:
       - ./wp_data:/var/www/html
       - ./php-conf/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
       - ./php-conf/opcache-recommended.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini
+      - ./php-conf/fpm-optimization.conf:/usr/local/etc/php-fpm.d/zz-optimize.conf
     networks:
       - wpnet
 
@@ -78,7 +80,7 @@ services:
     networks:
       - wpnet
   wp-cron:
-    image: wordpress:cli-alpine
+    image: wordpress:cli
     depends_on:
       - wordpress
     volumes:
