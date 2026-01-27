@@ -4,40 +4,38 @@ www.{$DOMAIN} {
 
 {$DOMAIN} {
     root * /var/www/html
-    
     encode gzip zstd
 
-
+    # Security Headers
     header {
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-
+    # 1. Chặn các file nhạy cảm trước
     @forbidden {
-        path /wp-config.php
-        path /readme.html
-        path /license.txt
-        path /.user.ini
-        path /wp-content/debug.log
+        path /wp-config.php /readme.html /license.txt /.user.ini /wp-content/debug.log
         path /wp-content/uploads/*.php
         path /.*
     }
     respond @forbidden 403
 
+    # 2. Xử lý Cache cho file tĩnh
     @static {
         file
         path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot *.mp4 *.webp
     }
-    header @static Cache-Control max-age=31536000
+    header @static Cache-Control "public, max-age=31536000, must-revalidate"
 
-
-    php_fastcgi wordpress:9000
-
-    file_server
-
+    # 3. Giới hạn upload (khớp với PHP settings)
     request_body {
         max_size 64MB
     }
+
+    # 4. Thực thi PHP
+    php_fastcgi wordpress:9000
+    
+    # 5. Phục vụ file tĩnh
+    file_server
 }
