@@ -13,5 +13,8 @@ RUN apk add --no-cache $PHPIZE_DEPS icu-dev libzip-dev \
         opcache \
     && apk del --no-cache $PHPIZE_DEPS icu-dev libzip-dev
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+COPY docker-entrypoint-custom.sh /usr/local/bin/docker-entrypoint-custom.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint-custom.sh
+
+ENTRYPOINT ["docker-entrypoint-custom.sh"]
 CMD ["php-fpm"]

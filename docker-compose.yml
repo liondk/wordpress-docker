@@ -6,9 +6,9 @@ services:
       - --transaction-isolation=READ-COMMITTED
       - --binlog-format=ROW
       - --innodb-file-per-table=1
-      - --innodb-buffer-pool-size=512M # Tối ưu cho 2GB RAM
-      - --innodb-log-file-size=128M
-      - --max-connections=50
+      - --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-128M}
+      - --innodb-log-file-size=${MYSQL_INNODB_LOG_FILE_SIZE:-64M}
+      - --max-connections=${MYSQL_MAX_CONNECTIONS:-30}
       - --skip-innodb-read-only-compressed
       - --innodb-temp-data-file-path=ibtmp1:12M:autoextend:max:2G
       - --log-bin=mysql-bin
@@ -20,7 +20,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./db_data:/var/lib/mysql
-      - ./db_tmp:/tmp
+    tmpfs:
+      - /tmp:size=256m,mode=1777
     logging:
       driver: "json-file"
       options:
@@ -32,7 +33,7 @@ services:
   redis:
     image: redis:7
     restart: always
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
+    command: redis-server --maxmemory ${REDIS_MAXMEMORY:-64mb} --maxmemory-policy allkeys-lru --save ""
     volumes:
       - ./redis_data:/data
     networks:
@@ -51,14 +52,22 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-256M}
+      PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-64M}
+      PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-64M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-300}
+      PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS:-10000}
+      PHP_FPM_MAX_CHILDREN: ${PHP_FPM_MAX_CHILDREN:-5}
+      PHP_FPM_START_SERVERS: ${PHP_FPM_START_SERVERS:-2}
+      PHP_FPM_MIN_SPARE_SERVERS: ${PHP_FPM_MIN_SPARE_SERVERS:-1}
+      PHP_FPM_MAX_SPARE_SERVERS: ${PHP_FPM_MAX_SPARE_SERVERS:-3}
+      PHP_FPM_MAX_REQUESTS: ${PHP_FPM_MAX_REQUESTS:-500}
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_REDIS_HOST', 'redis');
         define('DISABLE_WP_CRON', true);
     volumes:
       - ./wp_data:/var/www/html
-      - ./php-conf/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
       - ./php-conf/opcache-recommended.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini
-      - ./php-conf/fpm-optimization.conf:/usr/local/etc/php-fpm.d/zz-optimize.conf
     networks:
       - wpnet
 
@@ -81,6 +90,7 @@ services:
       - wpnet
   wp-cron:
     image: wordpress:cli
+    restart: always
     depends_on:
       - wordpress
     volumes:
