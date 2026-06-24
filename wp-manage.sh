@@ -36,10 +36,13 @@ RESET="\033[0m"
 # ============================================
 
 backup_db() {
-    echo -e "${YELLOW}→ Backing up database...${RESET}"
-    FILE="$BACKUP_DIR/db_${DATE}.sql.gz"
-    docker exec "$DB_CONTAINER" sh -c "mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE" | gzip > "$FILE"
-    echo -e "${GREEN}✅ Database backup saved to:${RESET} $FILE"
+  echo -e "${YELLOW}→ Backing up database...${RESET}"
+  FILE="$BACKUP_DIR/db_${DATE}.sql.gz"
+  
+  # Sử dụng service 'db' và công cụ mariadb-dump
+  docker compose exec -T db sh -c "mariadb-dump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE" | gzip > "$FILE"
+  
+  echo -e "${GREEN}✅ Database backup saved to:${RESET} $FILE"
 }
 
 backup_files() {
@@ -50,16 +53,20 @@ backup_files() {
 }
 
 restore_db() {
-    read -p "Enter DB backup file name (e.g. db_20251017.sql.gz): " FILE
-    FILE_PATH="$BACKUP_DIR/$FILE"
-    if [ ! -f "$FILE_PATH" ]; then
-        echo "❌ File not found: $FILE_PATH"
-        exit 1
-    fi
-    echo -e "${YELLOW}→ Restoring database from $FILE...${RESET}"
-    gunzip -c "$FILE_PATH" | docker exec -i "$DB_CONTAINER" \
-        mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
-    echo -e "${GREEN}✅ Database restored successfully.${RESET}"
+  read -p "Enter DB backup file name (e.g. db_20251017.sql.gz): " FILE
+  FILE_PATH="$BACKUP_DIR/$FILE"
+  
+  if [ ! -f "$FILE_PATH" ]; then
+    echo "❌ File not found: $FILE_PATH"
+    exit 1
+  fi
+  
+  echo -e "${YELLOW}→ Restoring database from $FILE...${RESET}"
+  
+  # Dùng docker compose và lệnh mariadb để import
+  gunzip -c "$FILE_PATH" | docker compose exec -T db mariadb -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
+  
+  echo -e "${GREEN}✅ Database restored successfully.${RESET}"
 }
 
 restore_files() {
